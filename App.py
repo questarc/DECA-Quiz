@@ -863,68 +863,7 @@ QUIZZES = [
 # Helper functions
 # --------------------------
 
-def render_quiz(quiz_index: int):
-    quiz = QUIZZES[quiz_index]
-    st.header(quiz["name"])
-
-    if "responses" not in st.session_state:
-        st.session_state["responses"] = {}
-    if quiz_index not in st.session_state["responses"]:
-        st.session_state["responses"][quiz_index] = {}
-
-    responses = st.session_state["responses"][quiz_index]
-
-    st.write("Select your answers for all questions, then click **Submit Quiz** at the bottom.")
-
-    for i, q in enumerate(quiz["questions"]):
-        st.markdown(f"**{q['question']}**")
-        key = f"quiz_{quiz_index}_q_{i}"
-        # Pre-select existing response if any
-        current_value = responses.get(i, None)
-        choice = st.radio(
-            label="",
-            options=list(range(len(q["options"]))),
-            format_func=lambda idx, opts=q["options"]: opts[idx],
-            index=current_value if current_value is not None else 0,
-            key=key
-        )
-        responses[i] = choice
-        st.markdown("---")
-
-    if st.button("Submit Quiz"):
-        score = 0
-        total = len(quiz["questions"])
-        st.subheader("Results")
-
-        for i, q in enumerate(quiz["questions"]):
-            selected = responses.get(i, None)
-            correct = q["answer"]
-            correct_text = q["options"][correct]
-            selected_text = q["options"][selected] if selected is not None else "No answer"
-
-            if selected == correct:
-                score += 1
-                st.markdown(f"✅ **Q{i+1}: Correct!**")
-            else:
-                st.markdown(f"❌ **Q{i+1}: Incorrect.**")
-
-            st.markdown(f"- **Your answer:** {selected_text}")
-            st.markdown(f"- **Correct answer:** {correct_text}")
-            st.markdown(f"- **Explanation:** {q['explanation']}")
-            st.markdown("---")
-
-        st.success(f"Your score: **{score} / {total}** ({round(score/total*100)}%)")
-
-
-# --------------------------
-# Streamlit layout
-# --------------------------
-
-st.title("DECA Personal Financial Literacy Quizzes")
-st.caption("Practice personal financial literacy concepts with five DECA-style multiple-choice quizzes.")
-
-quiz_names = [q["name"] for q in QUIZZES]
-selected_quiz_name = st.selectbox("Choose a quiz:", quiz_names)
+def render_quiz(quiz_index: int): quiz = QUIZZES[quiz_index] st.header(quiz["name"]) # Toggle for per-question feedback feedback_mode = st.checkbox("Show feedback after each question", value=False) # Initialize session state if "responses" not in st.session_state: st.session_state["responses"] = {} if quiz_index not in st.session_state["responses"]: st.session_state["responses"][quiz_index] = {} # Randomize question order once per quiz load if "order" not in st.session_state["responses"][quiz_index]: order = list(range(len(quiz["questions"]))) random.shuffle(order) st.session_state["responses"][quiz_index]["order"] = order order = st.session_state["responses"][quiz_index]["order"] responses = st.session_state["responses"][quiz_index] st.write("Select your answers for all questions, then click **Submit Quiz** at the bottom.") # Progress bar answered = sum(1 for i in order if responses.get(f"q_{i}") is not None) progress = answered / len(order) st.progress(progress) # Render questions for i in order: q = quiz["questions"][i] st.markdown(f"**{q['question']}**") key = f"q_{i}" current_value = responses.get(key, None) # No default selection choice = st.radio( label="", options=list(range(len(q["options"]))), format_func=lambda idx, opts=q["options"]: opts[idx], index=current_value if current_value is not None else None, key=key ) responses[key] = choice # Per-question feedback if feedback_mode and choice is not None: if choice == q["answer"]: st.success("Correct!") else: st.error("Incorrect.") st.info(f"Explanation: {q['explanation']}") st.markdown("---") # Submit button if st.button("Submit Quiz"): score = 0 total = len(order) st.subheader("Results") for i in order: q = quiz["questions"][i] selected = responses.get(f"q_{i}", None) correct = q["answer"] if selected == correct: score += 1 st.markdown(f"✅ **Correct:** {q['question']}") else: st.markdown(f"❌ **Incorrect:** {q['question']}") st.markdown(f"- **Your answer:** {q['options'][selected] if selected is not None else 'No answer'}") st.markdown(f"- **Correct answer:** {q['options'][correct]}") st.markdown(f"- **Explanation:** {q['explanation']}") st.markdown("---") st.success(f"Your score: **{score} / {total}** ({round(score/total*100)}%)") # -------------------------- # Streamlit layout # -------------------------- st.title("DECA Personal Financial Literacy Quizzes") st.caption("Practice personal financial literacy concepts with five DECA-style multiple-choice quizzes.") quiz_names = [q["name"] for q in QUIZZES] selected_quiz_name = st.selectbox("Choose a quiz:", quiz_names) selected_index = quiz_names.index(selected_quiz_name) render_quiz(selected_index) # -------------------------- # Footer # -------------------------- st.markdown(""" <br><br> <div style='text-align: center; color: gray; font-size: 14px;'> App developed by <strong>Sathvik Kakarla</strong> </div> """, unsafe_allow_html=True))
 selected_index = quiz_names.index(selected_quiz_name)
 
 render_quiz(selected_index)
